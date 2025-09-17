@@ -8,7 +8,7 @@ public class BadTicTacToeAi : ITicTacToeAi
 	private readonly float _minDelaySeconds;
 	private readonly float _maxDelaySeconds;
 
-	public BadTicTacToeAi(float minDelaySeconds = 1, float maxDelaySeconds = 3)
+	public BadTicTacToeAi(float minDelaySeconds, float maxDelaySeconds)
 	{
 		_minDelaySeconds = minDelaySeconds;
 		_maxDelaySeconds = maxDelaySeconds;
