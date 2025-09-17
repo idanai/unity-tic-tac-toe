@@ -31,8 +31,8 @@ public class GameBoardView : MonoBehaviour
 			tile.Interactable = true;
 			tile.SetState(GameBoard.TileState.Empty);
 		}
-		_strikeLine?.gameObject.SetActive(false); // TODO rm ?
-		_diagonalStrikeLine?.gameObject.SetActive(false); // TODO rm ?
+		_strikeLine.gameObject.SetActive(false);
+		_diagonalStrikeLine.gameObject.SetActive(false);
 	}
 
 	public void Awake()
@@ -43,6 +43,15 @@ public class GameBoardView : MonoBehaviour
 
 	public void ShowStrikeLine(GameBoard.WinShape winShape, int index)
 	{
-		// TODO
+		var (line, angle, pos) = winShape switch
+		{
+			GameBoard.WinShape.Horizontal => ( _strikeLine, 0f, new Vector2Int(1, index)),
+			GameBoard.WinShape.Vertical => (_strikeLine, 90f, new Vector2Int(index, 1)),
+			GameBoard.WinShape.ForwardSlash => (_diagonalStrikeLine, 0f, new Vector2Int(1, 1)),
+			GameBoard.WinShape.BackSlash => (_diagonalStrikeLine, 90f, new Vector2Int(1, 1)),
+		};
+		line.gameObject.SetActive(true);
+		line.transform.localEulerAngles = new(0, 0, angle);
+		line.transform.position = GetTile(pos.x, pos.y).transform.position;
 	}
 }
