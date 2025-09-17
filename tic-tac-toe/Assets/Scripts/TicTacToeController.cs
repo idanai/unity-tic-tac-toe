@@ -20,7 +20,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 
 	public GameLoopState State { get; private set; } = GameLoopState.Start;
 
-	private bool IsPlayerXTurn => _turn % 2 == 0 && !_isPlayerXFirst;
+	private bool IsPlayerXTurn => _turn % 2 == (_isPlayerXFirst ? 1 : 0);
 
 	private (ITicTacToeAi ai, GameBoard.TileState tileState) CurrentPlayerInfo
 		=> IsPlayerXTurn ? (_playerX, GameBoard.TileState.X) : (_player0, GameBoard.TileState.O);
