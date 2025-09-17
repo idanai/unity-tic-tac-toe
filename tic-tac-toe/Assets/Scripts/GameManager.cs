@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour
 		if (_gameController is not null)
 			return;
 
-		_gameController = new(_boardView, playerX: null, player0: new BadTicTacToeAi(), isXFirst: Random.Range(0, 2) is 0);
+		_gameController = new(_boardView, playerX: null, player0: new BadTicTacToeAi(), isPlayerXFirst: Random.Range(0, 2) is 0);
 		UniTask.Create(async () =>
 		{
 			using (_gameController)

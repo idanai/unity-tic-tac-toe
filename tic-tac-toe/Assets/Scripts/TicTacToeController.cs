@@ -16,23 +16,23 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	private readonly CancellationTokenSource _cts = new();
 	private UniTaskCompletionSource<Vector2Int> _userInputTcs;
 	private byte _turn;
-	private readonly bool _isXFirst;
+	private readonly bool _isPlayerXFirst;
 
 	public GameLoopState State { get; private set; } = GameLoopState.Start;
 
-	private bool IsPlayerXTurn => _turn % 2 == 0 && !_isXFirst;
+	private bool IsPlayerXTurn => _turn % 2 == 0 && !_isPlayerXFirst;
 
 	private (ITicTacToeAi ai, GameBoard.TileState tileState) CurrentPlayerInfo
 		=> IsPlayerXTurn ? (_playerX, GameBoard.TileState.X) : (_player0, GameBoard.TileState.O);
 
 	/// <param name="playerX">AI, or null for player</param>
 	/// <param name="player0">AI, or null for player</param>
-	public TicTacToeController(GameBoardView boardView, [CanBeNull] ITicTacToeAi playerX, [CanBeNull] ITicTacToeAi player0, bool isXFirst)
+	public TicTacToeController(GameBoardView boardView, [CanBeNull] ITicTacToeAi playerX, [CanBeNull] ITicTacToeAi player0, bool isPlayerXFirst)
 	{
 		_boardView = boardView;
 		_playerX = playerX;
 		_player0 = player0;
-		_isXFirst = isXFirst;
+		_isPlayerXFirst = isPlayerXFirst;
 		boardView.Clear();
 		boardView.Init(this);
 	}
