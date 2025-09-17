@@ -115,15 +115,15 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: tic-tac-toe-spritesheet_0
+      name: grid
       rect:
         serializedVersion: 2
-        x: 3
-        y: 83
-        width: 435
-        height: 921
+        x: 65
+        y: 461
+        width: 354
+        height: 365
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -136,15 +136,15 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tic-tac-toe-spritesheet_1
+      name: cross
       rect:
         serializedVersion: 2
-        x: 364
-        y: 618
-        width: 322
-        height: 401
+        x: 493
+        y: 714
+        width: 166
+        height: 165
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -157,15 +157,15 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tic-tac-toe-spritesheet_2
+      name: diagonal
       rect:
         serializedVersion: 2
-        x: 675
-        y: 48
-        width: 347
-        height: 963
+        x: 697
+        y: 657
+        width: 294
+        height: 296
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -178,15 +178,15 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tic-tac-toe-spritesheet_3
+      name: circle
       rect:
         serializedVersion: 2
-        x: 467
-        y: 357
-        width: 198
-        height: 257
+        x: 493
+        y: 436
+        width: 172
+        height: 178
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -207,7 +207,7 @@ TextureImporter:
         width: 6
         height: 6
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -220,15 +220,15 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: tic-tac-toe-spritesheet_5
+      name: horizontal
       rect:
         serializedVersion: 2
-        x: 227
-        y: 0
-        width: 547
-        height: 350
+        x: 278
+        y: 286
+        width: 462
+        height: 64
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -243,14 +243,20 @@ TextureImporter:
     outline: []
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: ae813d4d202784ddf81a0cdffa35130d
     internalID: 0
     vertices: []
     indices: 
     edges: []
     weights: []
     secondaryTextures: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      circle: 7465973835009186632
+      cross: 6537436829014377744
+      diagonal: -272313034399447673
+      grid: 1620755398345590606
+      horizontal: -1324452811273712262
+      tic-tac-toe-spritesheet_4: -4740796221320247139
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
