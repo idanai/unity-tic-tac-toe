@@ -3,12 +3,12 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 // Predictable AI that always chooses the first available tile. Good for debugging
-public class BadTicTacToeAi : ITicTacToeAi
+public class SimpleTicTacToeAi : ITicTacToeAi
 {
 	private readonly float _minDelaySeconds;
 	private readonly float _maxDelaySeconds;
 
-	public BadTicTacToeAi(float minDelaySeconds, float maxDelaySeconds)
+	public SimpleTicTacToeAi(float minDelaySeconds, float maxDelaySeconds)
 	{
 		_minDelaySeconds = minDelaySeconds;
 		_maxDelaySeconds = maxDelaySeconds;

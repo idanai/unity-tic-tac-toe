@@ -15,7 +15,7 @@ public class GameManager : MonoBehaviour
 		_gameController = new(
 			boardView: _boardView,
 			playerX: null,
-			player0: new BadTicTacToeAi(1, 3),
+			player0: new SimpleTicTacToeAi(1, 3),
 			isPlayerXFirst: Random.Range(0, 2) is 0);
 
 		UniTask.Create(async () =>
