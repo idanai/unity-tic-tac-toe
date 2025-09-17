@@ -15,7 +15,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	private readonly GameBoard _board = new();
 	private readonly CancellationTokenSource _cts = new();
 	private UniTaskCompletionSource<Vector2Int> _userInputTcs;
-	private byte _turn;
+	private byte _turn; // up to 9 turns
 	private readonly bool _isPlayerXFirst;
 
 	public GameLoopState State { get; private set; } = GameLoopState.Start;
@@ -83,6 +83,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 		{
 			_userInputTcs = new();
 			pos = await _userInputTcs.Task;
+			_userInputTcs = null;
 		}
 		else
 		{
@@ -116,10 +117,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 		}
 
 		if (value is not GameBoard.TileState.Empty)
-		{
-			Debug.LogError($"Cell should not be clickable at {pos}");
 			return;
-		}
 
 		// should always succeed since TryGetCell worked
 		if (!_board.TrySetTile(GameBoard.TileState.X, pos.x, pos.y))
@@ -128,7 +126,6 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 		}
 
 		_userInputTcs.TrySetResult(pos);
-		_userInputTcs = null;
 	}
 
 	private void SetTile(Vector2Int pos, GameBoard.TileState value)
