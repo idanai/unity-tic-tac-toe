@@ -4,11 +4,6 @@ using Cysharp.Threading.Tasks;
 using JetBrains.Annotations;
 using UnityEngine;
 
-public interface ITicTacToeAi
-{
-	Vector2Int ChooseMove(IReadOnlyGameBoard board);
-}
-
 public class TicTacToeController : GameTileView.IListener, IDisposable
 {
 	public enum GameLoopState : byte { Start, Continue, X, O, Draw };
@@ -26,8 +21,6 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	public GameLoopState State { get; private set; } = GameLoopState.Start;
 
 	private bool IsPlayerXTurn => _turn % 2 == 0 && !_isXFirst;
-
-	private static TimeSpan AiMoveDelay => TimeSpan.FromSeconds(1);
 
 	private (ITicTacToeAi ai, GameBoard.TileState tileState) CurrentPlayerInfo
 		=> IsPlayerXTurn ? (_playerX, GameBoard.TileState.X) : (_player0, GameBoard.TileState.O);
@@ -93,7 +86,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 		}
 		else
 		{
-			var delay = UniTask.Delay(AiMoveDelay, cancellationToken: cancellationToken);
+			var delay = UniTask.Delay(ai.Delay, cancellationToken: cancellationToken);
 			pos = ai.ChooseMove(_board);
 			await delay;
 		}

@@ -7,10 +7,6 @@ public class GameManager : MonoBehaviour
 
 	private TicTacToeController _gameController;
 
-	private void Awake()
-	{
-	}
-
 	private void Start()
 	{
 		if (_gameController is not null)
