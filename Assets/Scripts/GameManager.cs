@@ -2,11 +2,18 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 
-public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, GameMenu.IListener
+public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, GameMenuView.IListener
 {
-	[SerializeField] private GameBoardView _boardView;
-	[SerializeField] private GameMenu _menu;
+	[SerializeField] private Transform _boardParent;
+	[SerializeField] private Transform _menuParent;
+
+	[SerializeField] private AssetReference _boardAssetRef; // GameBoardView
+	[SerializeField] private AssetReference _menuAssetRef; // GameMenu
+
+	private GameBoardView _boardView;
+	private GameMenuView _menuView;
 
 	private TicTacToeController _gameController;
 	private CancellationTokenSource _runningGameCts;
@@ -45,34 +52,48 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, GameMenu.ILi
 		if (_gameController is not null)
 			return;
 
-		_menu.HideReplay();
+		_menuView.HideReplay();
 
 		_gameController = new(
 			boardView: _boardView,
 			playerX: null, // null for human player
 			player0: new SimpleTicTacToeAi(1, 3),
-			isPlayerXFirst: isPlayerXFirst ?? UnityEngine.Random.Range(0, 2) is 0); 
+			isPlayerXFirst: isPlayerXFirst ?? UnityEngine.Random.Range(0, 2) is 0);
 
 		using (_gameController)
 		{
 			await _gameController.Play(cancellationToken);
-			Debug.Log($"Game finished with state {_gameController.State}");
 			OnGameOver?.Invoke();
 		}
+
 		_gameController = null;
 
-		_menu.ShowReplay();
+		_menuView.ShowReplay();
 	}
 
-	void GameMenu.IListener.HandleReplayClick() => Play(null, destroyCancellationToken).Forget();
+	void GameMenuView.IListener.HandleReplayClick() => Play(null, destroyCancellationToken).Forget();
 
-	private void Awake() => _menu.Init(this);
+	private async UniTaskVoid LoadAssets(CancellationToken cancellationToken)
+	{
+		await UniTask.WhenAll(LoadBoardAsset(cancellationToken), LoadMenuAsset(cancellationToken));
+		_menuView.ShowReplay();
+	}
+
+	private async UniTask LoadMenuAsset(CancellationToken cancellationToken)
+	{
+		var go = await _menuAssetRef.InstantiateAsync(_menuParent).ToUniTask(cancellationToken: cancellationToken);
+		_menuView = go.GetComponent<GameMenuView>();
+		_menuView.Init(this);
+	}
+
+	private async UniTask LoadBoardAsset(CancellationToken cancellationToken)
+	{
+		var go = await _boardAssetRef.InstantiateAsync(_boardParent).ToUniTask(cancellationToken: cancellationToken);
+		_boardView = go.GetComponent<GameBoardView>();
+		_boardView.Clear();
+	}
+
+	private void Awake() => LoadAssets(destroyCancellationToken).Forget();
 
 	private void OnDestroy() => CancelRunningGame(null);
-
-	private void Start()
-	{
-		CancelRunningGame(new());
-		Play(null, destroyCancellationToken).Forget();
-	}
 }

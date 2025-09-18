@@ -1,4 +1,3 @@
-using System;
 using JetBrains.Annotations;
 using UnityEngine;
 
@@ -48,5 +47,5 @@ public class GameTileView : MonoBehaviour
 	}
 
 	[UsedImplicitly]
-	public void OnClick() => _listener.HandleClick(this);
+	public void OnClick() => _listener?.HandleClick(this);
 }
