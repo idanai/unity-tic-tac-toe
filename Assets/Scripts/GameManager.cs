@@ -6,11 +6,16 @@ using UnityEngine.AddressableAssets;
 
 public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeController.IListener, GameMenuView.IListener
 {
+	[Header("References")]
 	[SerializeField] private Transform _boardParent;
 	[SerializeField] private Transform _menuParent;
 
+	[Header("Assets")]
 	[SerializeField] private AssetReference _boardAssetRef; // GameBoardView
 	[SerializeField] private AssetReference _menuAssetRef; // GameMenu
+
+	[Header("Settings")]
+	[SerializeField] private SimpleComputerPlayer _ai;
 
 	private GameBoardView _boardView;
 	private GameMenuView _menuView;
@@ -58,7 +63,7 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 			listener: this,
 			boardView: _boardView,
 			playerX: null, // null for human player
-			player0: new SimpleTicTacToeAi(1, 3),
+			player0: _ai,
 			isPlayerXFirst: isPlayerXFirst ?? UnityEngine.Random.Range(0, 2) is 0);
 
 		using var _ = cancellationToken.RegisterWithoutCaptureExecutionContext(() =>
