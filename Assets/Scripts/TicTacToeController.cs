@@ -25,7 +25,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	[CanBeNull] private readonly ITicTacToeAi _playerX;
 	[CanBeNull] private readonly ITicTacToeAi _playerO;
 	private readonly GameBoard _board = new();
-	private readonly CancellationTokenSource _cts = new();
+	private CancellationTokenSource _cts = new();
 	private UniTaskCompletionSource<Vector2Int> _userInputTcs;
 	public GameLoopState State { get; private set; } = GameLoopState.Start;
 	public byte Turn { get; private set; }
@@ -61,8 +61,9 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	public void Dispose()
 	{
 		_userInputTcs?.TrySetCanceled();
-		_cts.Cancel();
-		_cts.Dispose();
+		_cts?.Cancel();
+		_cts?.Dispose();
+		_cts = null;
 	}
 
 	/// <summary>Starts a new game. DO NOT CALL MORE THAN ONCE on the same instance</summary>
