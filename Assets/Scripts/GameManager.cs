@@ -9,18 +9,22 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 	[Header("References")]
 	[SerializeField] private Transform _boardParent;
 	[SerializeField] private Transform _menuParent;
+	[SerializeField] private Transform _hudParent;
 
 	[Header("Assets")]
 	[SerializeField] private AssetReference _boardAssetRef; // GameBoardView
 	[SerializeField] private AssetReference _menuAssetRef; // GameMenu
+	[SerializeField] private AssetReference _hudAssetRef; // HUDView
 
 	[Header("Settings")]
 	[SerializeField] private SimpleComputerPlayer _ai;
 
 	private GameBoardView _boardView;
 	private GameMenuView _menuView;
+	private HudView _hudView;
 
 	private TicTacToeController _gameController;
+	private ScoreManager _scoreManager;
 	private CancellationTokenSource _runningGameCts;
 	private UniTaskCompletionSource _playerTurnTcs;
 
@@ -31,10 +35,7 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 
 	public bool IsGameInProgress => _gameController?.IsFinished is true;
 
-	public int GetFinalScore()
-	{
-		throw new NotImplementedException(); // TODO
-	}
+	public int GetFinalScore() => _scoreManager.Score;
 
 	public UniTask LoadNewGameAsync(bool? isUserFirstTurn = null)
 	{
@@ -44,11 +45,11 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 
 	private void CancelRunningGame(CancellationTokenSource newCts)
 	{
-		if (_runningGameCts is null)
-			return;
-
-		_runningGameCts.Cancel();
-		_runningGameCts.Dispose();
+		if (_runningGameCts is not null)
+		{
+			_runningGameCts.Cancel();
+			_runningGameCts.Dispose();
+		}
 		_runningGameCts = newCts;
 	}
 
@@ -74,13 +75,25 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 			_gameController = null;
 		});
 
-		cancellationToken.ThrowIfCancellationRequested();
-
-		_playerTurnTcs = new();
 
 		using (_gameController)
 		{
+			cancellationToken.ThrowIfCancellationRequested();
+			_playerTurnTcs = new();
+
+			_hudView.SetCurrentPlayer(_gameController.IsPlayerXFirst ? GameBoard.TileState.X : GameBoard.TileState.O);
+			_scoreManager.OnGameStart();
+
 			await _gameController.Play(cancellationToken);
+
+			_scoreManager.OnGameEnd(_gameController.State switch
+			{
+				TicTacToeController.GameLoopState.Draw => ScoreManager.GameEndState.Draw,
+				TicTacToeController.GameLoopState.WinX => ScoreManager.GameEndState.PlayerWin,
+				TicTacToeController.GameLoopState.WinO => ScoreManager.GameEndState.AiWin,
+				_ => throw new InvalidOperationException("Game ended in invalid state"),
+			});
+			_hudView.SetCurrentPlayer(GameBoard.TileState.Empty);
 			OnGameOver?.Invoke();
 		}
 		_gameController = null;
@@ -95,17 +108,38 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 
 	void TicTacToeController.IListener.HandlePlayerTurnEnded(GameBoard.TileState playerTile)
 	{
-		if (playerTile is GameBoard.TileState.X)
+		switch (playerTile)
 		{
-			_playerTurnTcs?.TrySetResult();
-			_playerTurnTcs = new();
+			case GameBoard.TileState.O:
+				_hudView.SetCurrentPlayer(GameBoard.TileState.X);
+				_scoreManager.OnPlayerTurnStart();
+				_playerTurnTcs?.TrySetResult();
+				_playerTurnTcs = new();
+				break;
+
+			case GameBoard.TileState.X:
+				_hudView.SetCurrentPlayer(GameBoard.TileState.O);
+				_scoreManager.OnPlayerTurnEnd();
+				break;
 		}
 	}
 
 	private async UniTaskVoid LoadAssets(CancellationToken cancellationToken)
 	{
-		await UniTask.WhenAll(LoadBoardAsset(cancellationToken), LoadMenuAsset(cancellationToken));
-		_menuView.ShowReplay();
+		await UniTask.WhenAll(
+			LoadBoardAsset(cancellationToken),
+			LoadMenuAsset(cancellationToken),
+			LoadHudAsset(cancellationToken));
+
+		_menuView.HideReplay();
+		LoadNewGameAsync().Forget();
+	}
+
+	private async UniTask LoadBoardAsset(CancellationToken cancellationToken)
+	{
+		var go = await _boardAssetRef.InstantiateAsync(_boardParent).ToUniTask(cancellationToken: cancellationToken);
+		_boardView = go.GetComponent<GameBoardView>();
+		_boardView.Clear();
 	}
 
 	private async UniTask LoadMenuAsset(CancellationToken cancellationToken)
@@ -115,11 +149,11 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 		_menuView.Init(this);
 	}
 
-	private async UniTask LoadBoardAsset(CancellationToken cancellationToken)
+	private async UniTask LoadHudAsset(CancellationToken cancellationToken)
 	{
-		var go = await _boardAssetRef.InstantiateAsync(_boardParent).ToUniTask(cancellationToken: cancellationToken);
-		_boardView = go.GetComponent<GameBoardView>();
-		_boardView.Clear();
+		var go = await _hudAssetRef.InstantiateAsync(_hudParent).ToUniTask(cancellationToken: cancellationToken);
+		_hudView = go.GetComponent<HudView>();
+		_scoreManager = new(_hudView);
 	}
 
 	private void Awake() => LoadAssets(destroyCancellationToken).Forget();

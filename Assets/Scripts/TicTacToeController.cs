@@ -31,7 +31,9 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	public byte Turn { get; private set; }
 	public bool IsPlayerXFirst { get; }
 
-	public bool IsFinished => State is not (GameLoopState.Start or GameLoopState.Continue);
+	public bool IsFinished => State is not (GameLoopState.Start or GameLoopState.Continue) || IsOutOfTurns;
+
+	private bool IsOutOfTurns => Turn is GameBoard.AREA;
 
 	private bool IsPlayerXTurn => Turn % 2 == (IsPlayerXFirst ? 1 : 0);
 
@@ -91,7 +93,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 		}
 
 		// out of turns, it's a draw
-		if (Turn is GameBoard.AREA)
+		if (IsOutOfTurns)
 			return GameLoopState.Draw;
 
 		Turn++;
