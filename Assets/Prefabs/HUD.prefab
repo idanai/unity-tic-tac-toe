@@ -310,7 +310,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Score {0}
+  m_Text: 'Score:'
 --- !u!1 &8855233643110494395
 GameObject:
   m_ObjectHideFlags: 0

@@ -24,16 +24,20 @@ public class ScoreManager
 
 	public void OnGameEnd(GameEndState state)
 	{
-		Score += (int)CalcFinalScore(state);
+		var gameScore = (int)CalcFinalScore(state);
+		Score += gameScore;
 		_scoreView.SetScore(Score);
+		Debug.Log($"Game Score: {gameScore}, Duration: {_playerReactionTime}");
 	}
 
 	private float CalcFinalScore(GameEndState state) => state switch
 	{
-		GameEndState.Draw => Mathf.Lerp(2, 49, CalcPenalty()),
-		GameEndState.PlayerWin => Mathf.Lerp(50, 100, 1 - CalcPenalty()),
+		GameEndState.Draw => Mathf.Lerp(2, 49, CalcBonus()),
+		GameEndState.PlayerWin => Mathf.Lerp(50, 100, CalcBonus()),
 		GameEndState.AiWin => 1,
 	};
+
+	private float CalcBonus() => 1 - CalcPenalty();
 
 	private float CalcPenalty() => _playerReactionTime switch
 	{
