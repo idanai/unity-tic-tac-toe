@@ -6,6 +6,11 @@ using UnityEngine;
 
 public class TicTacToeController : GameTileView.IListener, IDisposable
 {
+	public interface IListener
+	{
+		void HandlePlayerTurnEnded(GameBoard.TileState playerTile);
+	}
+
 	public enum GameLoopState : byte
 	{
 		Start,
@@ -13,25 +18,22 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 		WinX,
 		WinO,
 		Draw,
-	};
+	}
 
+	private readonly IListener _listener;
 	private readonly GameBoardView _boardView;
 	[CanBeNull] private readonly ITicTacToeAi _playerX;
 	[CanBeNull] private readonly ITicTacToeAi _player0;
-
-	// state
 	private readonly GameBoard _board = new();
 	private readonly CancellationTokenSource _cts = new();
 	private UniTaskCompletionSource<Vector2Int> _userInputTcs;
-	private UniTaskCompletionSource<GameBoard.TileState> _currentPlayerTurnTcs;
-	private byte _turn; // up to 9 turns
-	private readonly bool _isPlayerXFirst;
-
 	public GameLoopState State { get; private set; } = GameLoopState.Start;
+	public byte Turn { get; private set; }
+	public bool IsPlayerXFirst { get; }
 
 	public bool IsFinished => State is not (GameLoopState.Start or GameLoopState.Continue);
 
-	private bool IsPlayerXTurn => _turn % 2 == (_isPlayerXFirst ? 1 : 0);
+	private bool IsPlayerXTurn => Turn % 2 == (IsPlayerXFirst ? 1 : 0);
 
 	private (ITicTacToeAi ai, GameBoard.TileState tileState) CurrentPlayerInfo
 		=> IsPlayerXTurn ? (_playerX, GameBoard.TileState.X) : (_player0, GameBoard.TileState.O);
@@ -39,31 +41,23 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	/// <param name="playerX">AI, or null for player</param>
 	/// <param name="player0">AI, or null for player</param>
 	public TicTacToeController(
+		IListener listener,
 		GameBoardView boardView,
 		[CanBeNull] ITicTacToeAi playerX,
 		[CanBeNull] ITicTacToeAi player0,
 		bool isPlayerXFirst
 	) {
+		_listener = listener;
 		_boardView = boardView;
 		_playerX = playerX;
 		_player0 = player0;
-		_isPlayerXFirst = isPlayerXFirst;
+		IsPlayerXFirst = isPlayerXFirst;
 		boardView.Clear();
 		boardView.Init(this);
 	}
 
-	public UniTask WaitForPlayerXTurnOrEnd() => WaitForPlayerTurnOrEnd(GameBoard.TileState.X);
-
-	public UniTask WaitForPlayerOTurnOrEnd() => WaitForPlayerTurnOrEnd(GameBoard.TileState.O);
-
-	private async UniTask WaitForPlayerTurnOrEnd(GameBoard.TileState tileState)
-	{
-		while (!IsFinished && await _currentPlayerTurnTcs.Task != tileState) {}
-	}
-
 	public void Dispose()
 	{
-		SignalEndGame();
 		_userInputTcs?.TrySetCanceled();
 		_cts.Cancel();
 		_cts.Dispose();
@@ -82,32 +76,29 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 		do
 		{
 			State = await IterateGameLoop(cts.Token);
-			Debug.Log($"Turn = {_turn}");
+			Debug.Log($"Turn = {Turn}");
 		} while (State is GameLoopState.Continue);
-
-		SignalEndGame();
 	}
 
 	private async UniTask<GameLoopState> IterateGameLoop(CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
-		if (_board.IsWin(out var winShape, out var winner, out var index))
+		if (_board.IsWin(out var winShape, out var winnerTile, out var index))
 		{
 			_boardView.ShowStrikeLine(winShape, index);
-			return winner is GameBoard.TileState.X ? GameLoopState.WinX : GameLoopState.WinO;
+			return winnerTile is GameBoard.TileState.X ? GameLoopState.WinX : GameLoopState.WinO;
 		}
 
 		// out of turns, it's a draw
-		if (_turn is GameBoard.AREA)
+		if (Turn is GameBoard.AREA)
 			return GameLoopState.Draw;
 
-		_turn++;
+		Turn++;
 
 		var (ai, tileState) = CurrentPlayerInfo;
 		await HandlePlayerTurn(ai, tileState, cancellationToken);
-		_currentPlayerTurnTcs?.TrySetResult(tileState);
-		_currentPlayerTurnTcs = new();
+		_listener?.HandlePlayerTurnEnded(tileState);
 
 		return GameLoopState.Continue;
 	}
@@ -141,10 +132,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 		var pos = tile.Position;
 
 		if (!isPlayer)
-		{
-			Debug.LogError($"Clicked on tile when it's AI's turn at {pos}");
 			return;
-		}
 
 		if (!_board.TryGetTile(out var value, pos.x, pos.y))
 		{
@@ -169,11 +157,5 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	{
 		_board.TrySetTile(value, pos.x, pos.y);
 		_boardView.SetTile(value, pos.x, pos.y);
-	}
-
-	private void SignalEndGame()
-	{
-		_currentPlayerTurnTcs?.TrySetResult(GameBoard.TileState.Empty);
-		_currentPlayerTurnTcs = null;
 	}
 }

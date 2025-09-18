@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
-public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, GameMenuView.IListener
+public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeController.IListener, GameMenuView.IListener
 {
 	[SerializeField] private Transform _boardParent;
 	[SerializeField] private Transform _menuParent;
@@ -17,12 +17,12 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, GameMenuView
 
 	private TicTacToeController _gameController;
 	private CancellationTokenSource _runningGameCts;
+	private UniTaskCompletionSource _playerTurnTcs;
 
 	public event Action OnGameOver;
 
 	// Note: the assignment defines the player as always playing X
-	public UniTask WaitForPlayerTurn()
-		=> _gameController.WaitForPlayerXTurnOrEnd().AttachExternalCancellation(destroyCancellationToken);
+	public UniTask WaitForPlayerTurn() => _playerTurnTcs.Task;
 
 	public bool IsGameInProgress => _gameController?.IsFinished is true;
 
@@ -55,23 +55,47 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, GameMenuView
 		_menuView.HideReplay();
 
 		_gameController = new(
+			listener: this,
 			boardView: _boardView,
 			playerX: null, // null for human player
 			player0: new SimpleTicTacToeAi(1, 3),
 			isPlayerXFirst: isPlayerXFirst ?? UnityEngine.Random.Range(0, 2) is 0);
+
+		using var _ = cancellationToken.RegisterWithoutCaptureExecutionContext(() =>
+		{
+			_playerTurnTcs?.TrySetCanceled(cancellationToken);
+			_playerTurnTcs = null;
+			_gameController.Dispose();
+			_gameController = null;
+		});
+
+		cancellationToken.ThrowIfCancellationRequested();
+
+		_playerTurnTcs = new();
 
 		using (_gameController)
 		{
 			await _gameController.Play(cancellationToken);
 			OnGameOver?.Invoke();
 		}
-
 		_gameController = null;
+	
+		_playerTurnTcs?.TrySetResult();
+		_playerTurnTcs = null;
 
 		_menuView.ShowReplay();
 	}
 
 	void GameMenuView.IListener.HandleReplayClick() => Play(null, destroyCancellationToken).Forget();
+
+	void TicTacToeController.IListener.HandlePlayerTurnEnded(GameBoard.TileState playerTile)
+	{
+		if (playerTile is GameBoard.TileState.X)
+		{
+			_playerTurnTcs?.TrySetResult();
+			_playerTurnTcs = new();
+		}
+	}
 
 	private async UniTaskVoid LoadAssets(CancellationToken cancellationToken)
 	{

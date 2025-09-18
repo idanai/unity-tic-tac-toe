@@ -74,6 +74,11 @@ public class GameBoard : IReadOnlyGameBoard
 	private static bool CheckBounds(int x, int y)
 		=> x is >= 0 and < WIDTH && y is >= 0 and < HEIGHT;
 
+	/// <summary>Checks if there's a win on the board</summary>
+	/// <param name="winShape">diagonal / horizontal / vertical</param>
+	/// <param name="winner">tile of the winner</param>
+	/// <param name="index">index in the row / column, depending on "winShape"</param>
+	/// <returns></returns>
 	public bool IsWin(out WinShape winShape, out TileState winner, out int index)
 	{
 		return CheckRows(out winShape, out winner, out index)
