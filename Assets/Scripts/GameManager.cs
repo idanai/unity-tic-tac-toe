@@ -63,7 +63,7 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 			listener: this,
 			boardView: _boardView,
 			playerX: null, // null for human player
-			player0: _ai,
+			playerO: _ai,
 			isPlayerXFirst: isPlayerXFirst ?? UnityEngine.Random.Range(0, 2) is 0);
 
 		using var _ = cancellationToken.RegisterWithoutCaptureExecutionContext(() =>
@@ -84,7 +84,7 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 			OnGameOver?.Invoke();
 		}
 		_gameController = null;
-	
+
 		_playerTurnTcs?.TrySetResult();
 		_playerTurnTcs = null;
 

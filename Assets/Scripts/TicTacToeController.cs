@@ -23,7 +23,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	private readonly IListener _listener;
 	private readonly GameBoardView _boardView;
 	[CanBeNull] private readonly ITicTacToeAi _playerX;
-	[CanBeNull] private readonly ITicTacToeAi _player0;
+	[CanBeNull] private readonly ITicTacToeAi _playerO;
 	private readonly GameBoard _board = new();
 	private readonly CancellationTokenSource _cts = new();
 	private UniTaskCompletionSource<Vector2Int> _userInputTcs;
@@ -36,21 +36,21 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	private bool IsPlayerXTurn => Turn % 2 == (IsPlayerXFirst ? 1 : 0);
 
 	private (ITicTacToeAi ai, GameBoard.TileState tileState) CurrentPlayerInfo
-		=> IsPlayerXTurn ? (_playerX, GameBoard.TileState.X) : (_player0, GameBoard.TileState.O);
+		=> IsPlayerXTurn ? (_playerX, GameBoard.TileState.X) : (_playerO, GameBoard.TileState.O);
 
 	/// <param name="playerX">AI, or null for player</param>
-	/// <param name="player0">AI, or null for player</param>
+	/// <param name="playerO">AI, or null for player</param>
 	public TicTacToeController(
 		IListener listener,
 		GameBoardView boardView,
 		[CanBeNull] ITicTacToeAi playerX,
-		[CanBeNull] ITicTacToeAi player0,
+		[CanBeNull] ITicTacToeAi playerO,
 		bool isPlayerXFirst
 	) {
 		_listener = listener;
 		_boardView = boardView;
 		_playerX = playerX;
-		_player0 = player0;
+		_playerO = playerO;
 		IsPlayerXFirst = isPlayerXFirst;
 		boardView.Clear();
 		boardView.Init(this);
