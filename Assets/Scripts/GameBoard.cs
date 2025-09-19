@@ -26,6 +26,8 @@ public class GameBoard : IReadOnlyGameBoard
 
 	private readonly TileState[] _tiles = new TileState[AREA];
 
+	public TileState[] CloneTiles() => (TileState[])_tiles.Clone();
+
 	// methods
 
 	public void Clear() => Array.Clear(_tiles, 0, _tiles.Length);

@@ -27,6 +27,7 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	private readonly GameBoard _board = new();
 	private CancellationTokenSource _cts = new();
 	private UniTaskCompletionSource<Vector2Int> _userInputTcs;
+	private bool _isPlaying;
 	public GameLoopState State { get; private set; } = GameLoopState.Start;
 	public byte Turn { get; private set; }
 	public bool IsPlayerXFirst { get; }
@@ -37,8 +38,36 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 
 	private bool IsPlayerXTurn => Turn % 2 == (IsPlayerXFirst ? 1 : 0);
 
+	public GameBoard.TileState[] GetBoard() => _board.CloneTiles();
+
 	private (ITicTacToeAi ai, GameBoard.TileState tileState) CurrentPlayerInfo
 		=> IsPlayerXTurn ? (_playerX, GameBoard.TileState.X) : (_playerO, GameBoard.TileState.O);
+
+	public TicTacToeController(
+		IListener listener,
+		GameBoardView boardView,
+		GameSaveData saveData,
+		[CanBeNull] ITicTacToeAi playerX,
+		[CanBeNull] ITicTacToeAi playerO
+	) {
+		_listener = listener;
+		_boardView = boardView;
+		_playerX = playerX;
+		_playerO = playerO;
+		IsPlayerXFirst = saveData.IsPlayerXFirst;
+		Turn = saveData.Turn;
+		State = saveData.State;
+		boardView.Init(this);
+		for (var y = 0; y < GameBoard.HEIGHT; y++)
+		{
+			for (var x = 0; x < GameBoard.WIDTH; x++)
+			{
+				var tile = saveData.Board[GameBoard.GetIndex(x, y)];
+				_board.TrySetTile(tile, x, y);
+				boardView.SetTile(tile, x, y);
+			}
+		}
+	}
 
 	/// <param name="playerX">AI, or null for player</param>
 	/// <param name="playerO">AI, or null for player</param>
@@ -69,11 +98,12 @@ public class TicTacToeController : GameTileView.IListener, IDisposable
 	/// <summary>Starts a new game. DO NOT CALL MORE THAN ONCE on the same instance</summary>
 	public async UniTask Play(CancellationToken cancellationToken = default)
 	{
+		if (_isPlaying)
+			throw new InvalidOperationException($"Cannot call {nameof(Play)} more than once on the same instance");
+
+		_isPlaying = true;
+
 		var lifetimeToken = _cts.Token;
-
-		if (State is not GameLoopState.Start)
-			throw new InvalidOperationException("Game already started");
-
 		using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, lifetimeToken);
 
 		do

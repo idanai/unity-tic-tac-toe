@@ -14,7 +14,11 @@ public class ScoreManager
 	private float _playerReactionTime;
 	public int Score { get; private set; }
 
-	public ScoreManager(IScoreView scoreView) => _scoreView = scoreView;
+	public ScoreManager(IScoreView scoreView, int score)
+	{
+		_scoreView = scoreView;
+		Score = score;
+	}
 
 	public void OnGameStart() => _playerReactionTime = 0;
 

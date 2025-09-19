@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -17,12 +18,14 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 	[SerializeField] private AssetReference _hudAssetRef; // HUDView
 
 	[Header("Settings")]
+	[SerializeField] private string _saveKey = "GameSave";
 	[SerializeField] private SimpleComputerPlayer _ai;
 
 	private GameBoardView _boardView;
 	private GameMenuView _menuView;
 	private HudView _hudView;
 
+	private readonly ISaveSystem _saveSystem = new TextSaveSystem();
 	private TicTacToeController _gameController;
 	private ScoreManager _scoreManager;
 	private CancellationTokenSource _runningGameCts;
@@ -53,10 +56,11 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 		_runningGameCts = newCts;
 	}
 
-	private async UniTask Play(bool? isPlayerXFirst, CancellationToken cancellationToken)
+	/// <param name="cancellationToken">Quits the game</param>
+	private UniTask Play(bool? isPlayerXFirst, CancellationToken cancellationToken)
 	{
 		if (_gameController is not null)
-			return;
+			return default;
 
 		_menuView.HideReplay();
 
@@ -67,11 +71,17 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 			playerO: _ai,
 			isPlayerXFirst: isPlayerXFirst ?? UnityEngine.Random.Range(0, 2) is 0);
 
+		return StartPlay(cancellationToken);
+	}
+
+	private async UniTask StartPlay(CancellationToken cancellationToken)
+	{
 		using var _ = cancellationToken.RegisterWithoutCaptureExecutionContext(() =>
 		{
 			_playerTurnTcs?.TrySetCanceled(cancellationToken);
 			_playerTurnTcs = null;
-			_gameController.Dispose();
+			HandleGameEnd();
+			_gameController?.Dispose();
 			_gameController = null;
 		});
 
@@ -85,6 +95,7 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 			_scoreManager.OnGameStart();
 
 			await _gameController.Play(cancellationToken);
+			cancellationToken.ThrowIfCancellationRequested();
 
 			_scoreManager.OnGameEnd(_gameController.State switch
 			{
@@ -94,7 +105,7 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 				_ => throw new InvalidOperationException("Game ended in invalid state"),
 			});
 			_hudView.SetCurrentPlayer(GameBoard.TileState.Empty);
-			OnGameOver?.Invoke();
+			HandleGameEnd();
 		}
 		_gameController = null;
 
@@ -102,6 +113,20 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 		_playerTurnTcs = null;
 
 		_menuView.ShowReplay();
+	}
+
+	private void HandleGameEnd()
+	{
+		_saveSystem.Save(_saveKey, new GameSaveData
+		{
+			Board = _gameController.GetBoard(),
+			Score = GetFinalScore(),
+			Turn = _gameController.Turn,
+			State = _gameController.State,
+			IsPlayerXFirst = _gameController.IsPlayerXFirst,
+		});
+		Debug.Log(GetFinalScore());
+		OnGameOver?.Invoke();
 	}
 
 	void GameMenuView.IListener.HandleReplayClick() => Play(null, destroyCancellationToken).Forget();
@@ -132,7 +157,16 @@ public class GameManager : MonoBehaviour, PlayPerfect.IGameManager, TicTacToeCon
 			LoadHudAsset(cancellationToken));
 
 		_menuView.HideReplay();
-		LoadNewGameAsync().Forget();
+		if (_saveSystem.TryLoad(_saveKey, out GameSaveData saveData))
+		{
+			_scoreManager.SetScore(saveData.Score);
+			_gameController = new(this, _boardView, saveData, null, new SimpleComputerPlayer());
+			StartPlay(destroyCancellationToken).Forget();
+		}
+		else
+		{
+			LoadNewGameAsync().Forget();
+		}
 	}
 
 	private async UniTask LoadBoardAsset(CancellationToken cancellationToken)
